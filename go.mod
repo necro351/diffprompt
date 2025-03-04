@@ -1,4 +1,4 @@
-module github.com/necro351/orgprompt
+module github.com/necro351/diffprompt
 
 go 1.23.2
 

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/necro351/orgprompt/chat/chatgpt"
+	"github.com/necro351/diffprompt/chat/chatgpt"
 	"github.com/pkg/errors"
 )
 
@@ -32,7 +32,7 @@ func main() {
 
 	if *apiKey == "" {
 		// Read API key from config file in home directory
-		cfgPath := path.Join(os.Getenv("HOME"), ".orgprompt")
+		cfgPath := path.Join(os.Getenv("HOME"), ".diffprompt")
 
 		apiKeyBytes, err := os.ReadFile(cfgPath)
 		if err != nil {

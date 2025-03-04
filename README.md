@@ -1,7 +1,7 @@
 Intro
 =====
 
-The orgprompt command reads a combination of prompt and code input, parses it, then uses ChatGPT to
+The diffprompt command reads a combination of prompt and code input, parses it, then uses ChatGPT to
 operate on the input according to the instructions of the prompt. It is easy to integrate it with
 your editor.
 
@@ -11,20 +11,20 @@ Setup
 Build and install the tool in your local golang bin directory:
 
 ```
-rick@mac orgprompt % which diff
+rick@mac diffprompt % which diff
 /usr/bin/diff
-rick@mac orgprompt % echo $?
+rick@mac diffprompt % echo $?
 0
-rick@mac orgprompt % go env|grep GOPATH
+rick@mac diffprompt % go env|grep GOPATH
 GOPATH='/Users/rick/go'
-rick@mac orgprompt % pushd tools/orgprompt 
-~/Documents/orgprompt/tools/orgprompt ~/Documents/orgprompt
-rick@mac orgprompt % go build
-rick@mac orgprompt % go install
-rick@mac orgprompt % popd
-~/Documents/orgprompt
-rick@mac orgprompt % ls -lsa /Users/rick/go/bin/orgprompt
-15312 -rwxr-xr-x  1 rick  staff  7838594 Feb 28 11:56 /Users/rick/go/bin/orgprompt
+rick@mac diffprompt % pushd tools/diffprompt 
+~/Documents/diffprompt/tools/diffprompt ~/Documents/diffprompt
+rick@mac diffprompt % go build
+rick@mac diffprompt % go install
+rick@mac diffprompt % popd
+~/Documents/diffprompt
+rick@mac diffprompt % ls -lsa /Users/rick/go/bin/diffprompt
+15312 -rwxr-xr-x  1 rick  staff  7838594 Feb 28 11:56 /Users/rick/go/bin/diffprompt
 ```
 
 In the above commands, for a typical golang install, I first check that we have
@@ -36,10 +36,10 @@ in the expected location.
 Next we need to store the OpenAI API key in a config file in our home directory:
 
 ```
-echo "sk-proj-THIS_IS_MY_SECRET_API_KEY" > ~/.orgprompt
+echo "sk-proj-THIS_IS_MY_SECRET_API_KEY" > ~/.diffprompt
 ```
 
-Now we are ready for an example run of the orgprompt tool:
+Now we are ready for an example run of the diffprompt tool:
 
 ```
 #!/bin/bash
@@ -50,10 +50,10 @@ func Test(t *testing.T) {
 
   // Implement test here for func Scan(array []int, value int) (int, bool) which returns first index with value and true, or false if none
 
-}'|./orgprompt
+}'|./diffprompt
 ```
 
-Input to `orgprompt` is a combination of prompt and code. The prompt are all lines that come before
+Input to `diffprompt` is a combination of prompt and code. The prompt are all lines that come before
 the delimeter line `vvv`. The code is all lines that come after the delimeter line.
 
 Vim Integration
@@ -61,15 +61,15 @@ Vim Integration
 Add this line to your .vimrc file:
 
 ```
-" Map g-c on visiual selection to run highlighted text through the orgprompt
+" Map g-c on visiual selection to run highlighted text through the diffprompt
 " command
-vnoremap gc :!orgprompt<CR>
+vnoremap gc :!diffprompt<CR>
 ```
 
-Now you can highlight a block of text in visual mode and press `gc` to run it through orgprompt.
+Now you can highlight a block of text in visual mode and press `gc` to run it through diffprompt.
 
 In the example below, we add the prompt, the delimeter line, then highlight the prompt and
-code with Shift-V in `vim`, then press `gc` to run the code through orgprompt:
+code with Shift-V in `vim`, then press `gc` to run the code through diffprompt:
 
 Before:
 ```

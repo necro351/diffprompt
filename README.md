@@ -3,7 +3,8 @@ Intro
 
 The diffprompt command reads a combination of prompt and code input, parses it, then uses ChatGPT to
 operate on the input according to the instructions of the prompt. It is easy to integrate it with
-your editor.
+your editor. The resulting code is printed to standard output, or can replace selected text in your
+editor. You can use 'apply' and 'reject' commands to accept or reject the changes.
 
 Setup
 -----
@@ -182,4 +183,95 @@ After:
  
  	return strip3(string(output)), nil
  }
+```
+
+To accept or reject some or all of the changes, add lines with the word
+'accept' or 'reject' in them above the blocks of changes you want the command
+to apply to, e.g., we add an 'apply' line above the entire block, select the
+apply line and block, then press `gc` to apply the changes:
+
+
+```
+apply
+-// sideBySideDiff returns a side-by-side diff of the input and result strings by
+-// writing both strings to temporary files, then running `diff -y` on them.
+ func sideBySideDiff(input, result string) (string, error) {
+-	inputFile, err := os.CreateTemp("", "input-")
+-	if err != nil {
+-		return "", errors.Wrap(err, "creating input file failed")
+-	}
+-	defer os.Remove(inputFile.Name())
++	cmd := exec.Command("diff", "-y", "-U10000000")
++	cmd.Stdin = strings.NewReader(input + "\n---\n" + result)
+ 
+-	resultFile, err := os.CreateTemp("", "result-")
+-	if err != nil {
+-		return "", errors.Wrap(err, "creating result file failed")
+-	}
+-	defer os.Remove(resultFile.Name())
+-
+-	if _, err := inputFile.WriteString(input); err != nil {
+-		return "", errors.Wrap(err, "writing input file failed")
+-	}
+-	if _, err := resultFile.WriteString(result); err != nil {
+-		return "", errors.Wrap(err, "writing result file failed")
+-	}
+-
+-	if err := inputFile.Close(); err != nil {
+-		return "", errors.Wrap(err, "closing input file failed")
+-	}
+-	if err := resultFile.Close(); err != nil {
+-		return "", errors.Wrap(err, "closing result file failed")
+-	}
+-
+-	// diff --no-prefix -U1000
+-	cmd := exec.Command("diff", "-U10000000", inputFile.Name(), resultFile.Name())
+ 	output, err := cmd.CombinedOutput()
+ 	if err != nil {
+ 		if exitError, ok := err.(*exec.ExitError); ok {
+ 			ws, ok := exitError.Sys().(syscall.WaitStatus)
+ 			if !ok {
+ 				return "", errors.New("failed to get exit status")
+ 			}
+ 
+ 			exitCode := ws.ExitStatus()
+ 			if exitCode > 1 {
+ 				return "", errors.New("diff command failed")
+ 			}
+ 		} else {
+ 			return "", errors.New("diff call failed")
+ 		}
+ 	}
+ 
+ 	return strip3(string(output)), nil
+ }
+```
+
+...becomes...
+
+```
+func sideBySideDiff(input, result string) (string, error) {
+	cmd := exec.Command("diff", "-y", "-U10000000")
+	cmd.Stdin = strings.NewReader(input + "\n---\n" + result)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			ws, ok := exitError.Sys().(syscall.WaitStatus)
+			if !ok {
+				return "", errors.New("failed to get exit status")
+			}
+
+			exitCode := ws.ExitStatus()
+			if exitCode > 1 {
+				return "", errors.New("diff command failed")
+			}
+		} else {
+			return "", errors.New("diff call failed")
+		}
+	}
+
+	return strip3(string(output)), nil
+}
+
 ```

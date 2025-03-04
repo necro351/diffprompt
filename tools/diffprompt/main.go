@@ -54,10 +54,13 @@ func main() {
 	prompt, input := parseMessage(*message)
 
 	if prompt == "" {
-		*message = input
-	} else {
-		*message = prompt + "\n\n" + input
+		// If we are not using a prompt, then search for and apply commands
+		fmt.Println(applyCommands(input))
+
+		return
 	}
+
+	*message = prompt + "\n\n" + input
 
 	// Remove boilerplate from the message
 	*message = fmt.Sprintf(boilerRemover, *message)
@@ -103,6 +106,105 @@ func parseMessage(message string) (prompt, input string) {
 	input = strings.Join(lines[separator+1:], "\n")
 
 	return prompt, input
+}
+
+// applyCommands goes through the input line by line, and groups lines into
+// command and diff blocks. For each block, it then applies the command, to
+// the diff block. The concatenated result of applying all commands to their
+// respective blocks is returned.
+//
+// A command is a line with nothing but whitespace and a single command word.
+// Valid commands are 'apply' and 'reject'. Apply will remove all lines that
+// start with the '-' character, and will keep all lines that start with the '+',
+// or ' ' characters, but will remove the '+' or ' ' character. Reject will
+// do the opposite.
+//
+// Here is an example:
+//
+//	apply
+//	+line1
+//	-line2
+//	 line3
+//	reject
+//	+line4
+//	-line5
+//	 line6
+//
+// ...would result in:
+//
+//	line1
+//	line3
+//	line5
+//	line6
+func applyCommands(input string) string {
+	command := ""
+	commandLines := []string{}
+	lines := strings.Split(input, "\n")
+	outLines := []string{}
+
+	for len(lines) > 0 {
+		command, commandLines, lines = nextCommandBlock(lines)
+		outLines = append(outLines, applyCommand(command, commandLines)...)
+	}
+
+	if len(outLines) == 1 {
+		outLines = append(outLines, "")
+	}
+
+	return strings.Join(outLines, "\n")
+}
+
+func nextCommandBlock(lines []string) (string, []string, []string) {
+	if len(lines) == 0 {
+		return "", nil, nil
+	}
+
+	command := ""
+	firstLine := strings.TrimSpace(lines[0])
+
+	if firstLine == "apply" || firstLine == "reject" {
+		command = firstLine
+		lines = lines[1:]
+	}
+
+	// search for next command
+	for i, line := range lines {
+		line = strings.TrimSpace(line)
+
+		if line == "apply" || line == "reject" {
+			return command, lines[:i], lines[i:]
+		}
+	}
+
+	return command, lines[:], nil
+}
+
+func applyCommand(command string, lines []string) []string {
+	outLines := make([]string, 0)
+
+	for _, line := range lines {
+		if command == "apply" {
+			if strings.HasPrefix(line, "-") {
+				continue
+			} else if strings.HasPrefix(line, "+") {
+				line = strings.TrimPrefix(line, "+")
+			} else if strings.HasPrefix(line, " ") {
+				line = strings.TrimPrefix(line, " ")
+			}
+		} else if command == "reject" {
+			if strings.HasPrefix(line, "+") {
+				continue
+			} else if strings.HasPrefix(line, "-") {
+				line = strings.TrimPrefix(line, "-")
+			} else if strings.HasPrefix(line, " ") {
+				line = strings.TrimPrefix(line, " ")
+			}
+		}
+
+		outLines = append(outLines, line)
+	}
+
+	return outLines
 }
 
 // sideBySideDiff returns a side-by-side diff of the input and result strings by
